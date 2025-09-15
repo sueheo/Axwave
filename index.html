@@ -12,16 +12,15 @@
     img {
       display: block;
       max-width: 100%;   /* 화면보다 넓으면 줄임 */
-      width: auto;       /* 원본보다 크게는 안 늘림 */
+      width: auto;       /* 원본 크기 유지 (강제 확대 방지) */
       height: auto;      /* 비율 유지 */
-      image-rendering: -webkit-optimize-contrast; /* 크롬에서 축소시 선명하게 */
-      image-rendering: crisp-edges;               /* 일부 브라우저용 */
+      image-rendering: -webkit-optimize-contrast; /* 크롬 등에서 축소 선명도 개선 */
+      image-rendering: crisp-edges;               /* 일부 브라우저 */
       margin: 0 auto;    /* 가운데 정렬 */
     }
   </style>
 </head>
 <body>
-  <!-- 같은 repo 안에 PF.png 파일 업로드해두고 사용 -->
-  <img src="PF.png" alt="Portfolio">
+  <img src="https://i.ibb.co/Nn2pKMZT/PF.png" alt="Portfolio">
 </body>
 </html>
