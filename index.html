@@ -5,15 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Portfolio</title>
   <style>
-    body { margin: 0; background: #f9f9f9; }
+    body { 
+      margin: 0; 
+      background: #f9f9f9; 
+    }
     img {
       display: block;
-      width: 100%;       /* 화면 가로 꽉 채우기 */
+      max-width: 100%;   /* 화면보다 넓으면 줄임 */
+      width: auto;       /* 원본보다 크게는 안 늘림 */
       height: auto;      /* 비율 유지 */
+      image-rendering: -webkit-optimize-contrast; /* 크롬에서 축소시 선명하게 */
+      image-rendering: crisp-edges;               /* 일부 브라우저용 */
+      margin: 0 auto;    /* 가운데 정렬 */
     }
   </style>
 </head>
 <body>
-  <img src="https://i.ibb.co/KpTTZJBc/PF.png" alt="Portfolio">
+  <!-- 같은 repo 안에 PF.png 파일 업로드해두고 사용 -->
+  <img src="PF.png" alt="Portfolio">
 </body>
 </html>
