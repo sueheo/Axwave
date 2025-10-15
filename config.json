@@ -1,0 +1,10 @@
+{
+    "smtp_server": "smtp.gmail.com",
+    "port": 465,
+    "sender_email": "sueheo021011@gmail.com",
+    "password": "",
+    "receiver_email": "sueheo@naver.com",
+    "locations": ["서울", "경기"],
+    "jobs": ["개발", "데이터", "AI"],
+    "years": 1
+}

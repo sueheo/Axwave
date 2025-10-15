@@ -1,0 +1,74 @@
+name: Automated Email Sender 📧
+
+# 1. 워크플로우 실행 조건 설정
+on:
+  # 매일 UTC 기준 00:00 (한국 시간 오전 9시)에 실행
+  schedule:
+    # cron 표현식: 분 시 일 월 요일
+    # 0 0 * * *는 매일 00:00 UTC에 실행을 의미합니다.
+    - cron: '0 0 * * *'
+  
+  # 수동 실행을 위한 워크플로우 디스패치 버튼 추가
+  workflow_dispatch:
+
+  # 3. 'push' 이벤트에 브랜치 설정 추가 (브랜치 변경의 핵심)
+  push:
+    branches:
+      # 👇 실행을 원하는 브랜치 이름으로 변경
+      -ax_wave_automail
+
+# 2. 실행될 작업 정의
+jobs:
+  send_report:
+    # 실행 환경 (최신 Ubuntu 리눅스 환경 사용)
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # 저장소 내용(커밋)에 대한 쓰기 권한 부여
+      
+    # 환경 변수 설정
+    env:
+      # GitHub Secrets에 저장된 앱 비밀번호를 환경 변수로 로드
+      # 스크립트(send_email.py)에서 os.environ.get('EMAIL_PASSWORD')로 접근합니다.
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      
+    # 작업 실행 단계
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      # 2. Python 환경 설정
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x' # Python 3 버전 사용
+
+      # 3. 필수 라이브러리 설치 (SMTP, JSON 파싱은 기본 포함)
+      # 이메일 처리에 필요한 외부 라이브러리가 있다면 여기에 추가합니다. (예: pip install requests)
+      - name: Install dependencies
+        run: |
+          echo "No external Python dependencies needed."
+          
+      # 4. 이메일 발송 스크립트 실행
+      # 'python send_email.py' 명령을 실행합니다.
+      - name: Execute Email Sender Script
+        run: python send_email.py
+
+      # 5. 실행 결과 파일 (last_run.txt) 저장 (선택 사항)
+      # 다음 실행 시 스크립트가 'last_run.txt'를 사용할 수 있도록 저장소에 다시 커밋합니다.
+      - name: Commit Last Run Time
+        run: |
+          # last_run.txt 파일이 변경되었는지 확인
+          if git status --porcelain | grep "last_run.txt"; then
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            git add last_run.txt
+            git commit -m "Automated: Update last_run.txt after successful email dispatch"
+            git push
+          else
+            echo "last_run.txt unchanged. Skipping commit."
+          fi
+        # secrets.GITHUB_TOKEN은 기본적으로 제공되는 토큰으로, 커밋 권한이 있습니다.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
