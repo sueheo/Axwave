@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카드뉴스형 구글 RSS 뉴스 검색기</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS 시작 */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1a73e8;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        /* --- 검색창 스타일 --- */
+        .search-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 0 10px;
+        }
+
+        .search-controls input, .search-controls button {
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+
+        .search-controls input {
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        .search-controls button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .search-controls button:hover {
+            background-color: #357ae8;
+        }
+
+        /* --- 카드뉴스 레이아웃 --- */
+        #news-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            text-align: left;
+        }
+
+        .news-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-content {
+            padding: 15px;
+            flex-grow: 1;
+        }
+
+        .card-content h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            line-height: 1.4;
+            color: #1a73e8;
+            font-weight: 700;
+        }
+
+        .card-source {
+            font-size: 0.85rem;
+            color: #777;
+            margin-top: auto; /* 하단에 붙이기 */
+            padding-top: 10px;
+            border-top: 1px dashed #eee;
+        }
+        
+        .error-message {
+            color: #d93025;
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 20px;
+        }
+        
+        /* 로딩 스피너 */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4285f4;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* --- 모바일 반응형 --- */
+        @media (max-width: 600px) {
+            .search-controls {
+                flex-direction: column;
+            }
+            .search-controls input {
+                margin-bottom: 10px;
+            }
+            #news-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        /* CSS 끝 */
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>구글 RSS 기반 네이버 뉴스 검색</h1>
+        
+        <div class="search-controls">
+            <input type="text" id="search-query" placeholder="검색어를 입력하세요 (예: 부동산)">
+            <button onclick="fetchNews()">뉴스 검색</button>
+        </div>
+        
+        <div class="spinner" id="loading-spinner"></div>
+        <div id="error-display" class="error-message"></div>
+
+        <div id="news-container">
+            </div>
+    </div>
+
+    <script>
+        /* JavaScript 시작 */
+        
+        // CORS 우회를 위한 프록시 서비스 URL (CORS Anywhere 공개 인스턴스 예시)
+        // **주의**: 이 공개 서비스는 언제든지 불안정해지거나 차단될 수 있습니다. 
+        // 상업적 용도나 안정적인 사용을 위해서는 직접 프록시 서버를 구축해야 합니다.
+        const PROXY_URL = "https://corsproxy.io/?"; 
+        
+        // 기본 RSS URL (네이버 사이트 검색)
+        const BASE_RSS_URL = "https://news.google.com/rss/search?q=SITE_QUERY+site:naver.com&hl=ko&gl=KR&ceid=KR:ko";
+
+        const newsContainer = document.getElementById('news-container');
+        const spinner = document.getElementById('loading-spinner');
+        const errorDisplay = document.getElementById('error-display');
+        const searchInput = document.getElementById('search-query');
+
+        /**
+         * RSS 피드 URL을 생성하고 뉴스를 가져옵니다.
+         */
+        async function fetchNews() {
+            const query = searchInput.value.trim();
+            if (!query) {
+                alert("검색어를 입력해 주세요.");
+                return;
+            }
+
+            // UI 초기화 및 로딩 표시
+            newsContainer.innerHTML = '';
+            errorDisplay.innerHTML = '';
+            spinner.style.display = 'block';
+
+            try {
+                // URL 인코딩 및 프록시 적용
+                const encodedQuery = encodeURIComponent(query);
+                const finalUrl = BASE_RSS_URL.replace('SITE_QUERY', encodedQuery);
+                const fullProxyUrl = PROXY_URL + encodeURIComponent(finalUrl);
+
+                const response = await fetch(fullProxyUrl);
+
+                if (!response.ok) {
+                    throw new Error(`네트워크 오류: ${response.status}`);
+                }
+
+                const text = await response.text();
+                
+                // DOMParser를 사용하여 XML(RSS) 파싱
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, "text/xml");
+                
+                displayNews(xmlDoc);
+
+            } catch (error) {
+                console.error("뉴스 로드 실패:", error);
+                errorDisplay.innerHTML = `뉴스 로드 중 오류가 발생했습니다. (오류: ${error.message}). CORS 문제일 수 있으니, 나중에 다시 시도하거나 프록시 설정을 확인하세요.`;
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+
+        /**
+         * 파싱된 XML 데이터를 기반으로 뉴스 카드를 생성하여 표시합니다.
+         * @param {XMLDocument} xmlDoc 
+         */
+        function displayNews(xmlDoc) {
+            const items = xmlDoc.querySelectorAll('item');
+            
+            if (items.length === 0) {
+                newsContainer.innerHTML = `<div class="error-message">"${searchInput.value}"에 대한 뉴스 검색 결과가 없습니다.</div>`;
+                return;
+            }
+
+            items.forEach(item => {
+                const title = item.querySelector('title')?.textContent || '제목 없음';
+                const link = item.querySelector('link')?.textContent || '#';
+                const pubDate = item.querySelector('pubDate')?.textContent;
+                
+                // Google RSS의 경우 <description>이 본문 내용 대신 복잡한 HTML을 포함
+                // 여기서는 간단히 title과 source만 사용하고, pubDate를 가공하여 표시
+                
+                let source = '출처 정보 없음';
+                const sourceTag = item.querySelector('source');
+                if (sourceTag) {
+                    source = sourceTag.textContent.replace('(네이버)', '').trim() || '네이버 (구글 뉴스)';
+                }
+
+                // 카드 HTML 생성
+                const cardHtml = `
+                    <a href="${link}" target="_blank" class="news-card">
+                        <div class="card-content">
+                            <h3>${title}</h3>
+                            <div class="card-source">
+                                <span>${source}</span>
+                                <span style="float: right;">${formatDate(pubDate)}</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+                
+                newsContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        /**
+         * 날짜 문자열을 간단한 형식으로 변환합니다.
+         * @param {string} dateString 
+         * @returns {string}
+         */
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            try {
+                // Fri, 15 Oct 2025 00:00:00 GMT 형식 파싱
+                const date = new Date(dateString);
+                return date.toLocaleDateString('ko-KR', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+            } catch {
+                return dateString.split(' ')[0] || '';
+            }
+        }
+
+        // 페이지 로드 시 기본 검색 실행 (예시: "오늘의 주요 뉴스")
+        document.addEventListener('DOMContentLoaded', () => {
+            searchInput.value = "오늘의 주요 뉴스";
+            fetchNews();
+        });
+        
+        // Enter 키로 검색 가능하게 설정
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                fetchNews();
+            }
+        });
+
+        /* JavaScript 끝 */
+    </script>
+</body>
+</html>
