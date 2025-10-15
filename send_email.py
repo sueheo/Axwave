@@ -10,7 +10,7 @@ from datetime import datetime
 
 # --- 설정 파일 및 상태 파일 경로 ---
 CONFIG_FILE = 'config.json'
-# 👇 마지막 실행 시간 기록용 파일로 변경 (Last Run)
+# 👇 마지막 실행 시간 기록 및 공고 목록 저장용
 LAST_RUN_FILE = 'last_run.txt' 
 BASE_URL = "https://www.wanted.co.kr/api/v4/jobs?country=kr&limit=100&job_sort=job.latest_order"
 
@@ -26,25 +26,70 @@ def load_config():
         print(f"❌ 오류: 설정 파일 '{CONFIG_FILE}'의 JSON 형식이 잘못되었습니다. 문법(쉼표, 따옴표)을 확인하세요.")
         return None
 
-# ===== Last Run 시간 로드 및 저장 함수 (변경 완료) =====
+# ===== Last Run 시간 로드 및 저장 함수 (TXT 파일에 공고 목록 기록 로직 추가) =====
 
 def load_last_run_time():
-    """마지막 실행 시간(last_run.txt)을 로드합니다."""
+    """마지막 실행 시간(last_run.txt)을 로드합니다. 파일이 없을 경우 초기값 반환"""
     try:
         with open(LAST_RUN_FILE, 'r') as f:
-            content = f.read().strip()
+            content = f.readline().strip()
+            # 첫 번째 줄만 시간으로 간주하고, 나머지 내용은 무시
             return content if content else "기록 없음 (최초 실행)"
     except FileNotFoundError:
         return "파일 없음 (최초 실행)"
 
-def save_last_run_time():
-    """현재 시간을 마지막 실행 시간으로 저장합니다."""
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    with open(LAST_RUN_FILE, 'w') as f: 
-        f.write(current_time)
-    print(f"✅ 마지막 실행 시간: {current_time} 저장 완료.")
 
-# ===== Wanted API 호출 및 전체 페이지 순회 =====
+def format_jobs_for_txt(jobs):
+    """공고 목록을 TXT 파일에 저장하기 좋게 예쁜 문자열로 포맷합니다."""
+    if not jobs:
+        return "\n--- 조건에 맞는 공고가 없습니다. ---"
+    
+    formatted_list = ["\n" + "="*50, f"| {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - 필터링된 공고 ({len(jobs)}건) |", "="*50]
+    
+    for idx, j in enumerate(jobs, 1):
+        line = [
+            f"--- [ {idx:02d} ] ----------------------------------------",
+            f"회사: {j['company']['name']}",
+            f"직무: {j['position']}",
+            f"지역: {j.get('address', {}).get('full_location', '지역 정보 없음')}",
+            f"보상: {j.get('reward', {}).get('formatted_total', 'N/A')}",
+            f"링크: https://www.wanted.co.kr/wd/{j.get('id', 'N/A')}",
+            "-"*50
+        ]
+        formatted_list.extend(line)
+        
+    return "\n".join(formatted_list)
+
+
+def save_last_run_time(filtered_jobs):
+    """현재 시간과 필터링된 공고 목록을 last_run.txt 파일에 저장합니다."""
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # 새로운 기록 (시간과 공고 목록)
+    new_record = current_time + "\n" + format_jobs_for_txt(filtered_jobs) + "\n\n"
+    
+    try:
+        # 기존 파일의 전체 내용을 읽어옵니다. (첫 번째 줄은 시간으로 대체)
+        if os.path.exists(LAST_RUN_FILE):
+            with open(LAST_RUN_FILE, 'r') as f:
+                # 첫 번째 줄(이전 시간)을 건너뛰고 나머지 내용을 읽습니다.
+                f.readline()
+                old_content = f.read()
+        else:
+            old_content = ""
+
+        # 새 기록을 파일 맨 위에 추가하고, 기존 기록을 뒤에 붙입니다.
+        with open(LAST_RUN_FILE, 'w', encoding='utf-8') as f:
+            f.write(new_record)
+            f.write(old_content)
+        
+        print(f"✅ 새로운 기록이 '{LAST_RUN_FILE}'에 저장 완료되었습니다.")
+
+    except Exception as e:
+        print(f"❌ '{LAST_RUN_FILE}' 파일 저장 중 오류 발생: {e}")
+
+
+# ===== Wanted API 호출 및 전체 페이지 순회 (변경 없음) =====
 def fetch_all_jobs(max_pages=30):
     all_jobs = []
     offset = 0
@@ -74,7 +119,7 @@ def fetch_all_jobs(max_pages=30):
     print(f"✅ 총 {len(all_jobs)}개 공고 로드 완료")
     return all_jobs
 
-# ===== 필터링 =====
+# ===== 필터링 (변경 없음) =====
 def filter_jobs(jobs, conf):
     filtered = []
     for j in jobs:
@@ -91,7 +136,7 @@ def filter_jobs(jobs, conf):
             filtered.append(j)
     return filtered
 
-# ===== 메일 HTML 빌드 (필터링된 전체 목록 첨부) =====
+# ===== 메일 HTML 빌드 (last_run_time 대신 jobs 목록을 받도록 수정) =====
 def build_email_content(jobs, last_run_time):
     # 공고 목록 HTML
     jobs_html = ""
@@ -133,21 +178,20 @@ def send_automated_email():
     if not conf:
         return
 
-    # 환경 변수에서 비밀번호를 가져옴 (GitHub Secrets)
     password = os.environ.get('EMAIL_PASSWORD') 
     if not password:
         print("❌ 오류: GitHub Secrets에 'EMAIL_PASSWORD' 환경 변수가 설정되지 않았거나 비어 있습니다.")
         return
 
-    # 로깅 및 설정 출력
     print(f"🎯 조건: 지역={conf.get('locations', 'N/A')} | 직무={conf.get('jobs', 'N/A')} | 경력≥{conf.get('years', 'N/A')}년")
     
     # 1. 공고 로드 및 필터링
     all_jobs = fetch_all_jobs(max_pages=30)
     filtered_jobs = filter_jobs(all_jobs, conf)
     
+    # 조건에 맞는 공고가 없어도 Last Run 기록은 남기지 않음
     if not filtered_jobs:
-        print("📭 조건에 맞는 공고가 없습니다. 메일 발송을 건너뜁니다.")
+        print("📭 조건에 맞는 공고가 없습니다. 메일 발송을 건너뛰고 종료합니다.")
         return
 
     # 2. Last Run 시간 로드
@@ -168,7 +212,6 @@ def send_automated_email():
     message["To"] = receiver_email
     message["Subject"] = subject
     
-    # 일반 텍스트 버전과 HTML 버전을 모두 추가
     text_part = MIMEText(f"필터링된 공고 {len(filtered_jobs)}건이 업데이트되었습니다. HTML 이메일을 확인하세요.\n이전 실행 시간: {last_run_time}", 'plain')
     html_part = MIMEText(html_content, 'html')
     
@@ -184,8 +227,9 @@ def send_automated_email():
             server.sendmail(sender_email, receiver_email, message.as_string())
         
         print("✅ 이메일이 성공적으로 발송되었습니다!")
-        # 6. 성공 시에만 Last Run 시간 저장 및 커밋을 위한 준비
-        save_last_run_time()
+        
+        # 6. 성공 시에만 Last Run 시간과 공고 목록을 저장
+        save_last_run_time(filtered_jobs)
         print("✅ 워크플로우 정상 종료.")
         
     except Exception as e:
