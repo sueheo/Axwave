@@ -43,13 +43,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.x' # Python 3 버전 사용
-
+      
       # 3. 필수 라이브러리 설치 (SMTP, JSON 파싱은 기본 포함)
       # 이메일 처리에 필요한 외부 라이브러리가 있다면 여기에 추가합니다. (예: pip install requests)
       - name: Install dependencies
-        run: |
-          echo "No external Python dependencies needed."
-          
+        run: pip install requests time # time은 표준이지만, requests는 필수 설치!
+      
       # 4. 이메일 발송 스크립트 실행
       # 'python send_email.py' 명령을 실행합니다.
       - name: Execute Email Sender Script
