@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beats Solo3 Wireless - RED POPPY EDITION (3D View)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+
+    <style>
+        /* CSS 시작 */
+        :root {
+            --color-primary-red: #E30613; /* 시그니처 레드 */
+            --color-secondary-red: #A3000C;
+            --color-text-dark: #333333;
+            --color-text-light: #f9f9f9;
+            --color-bg-light: #ffffff;
+            --color-bg-poppy: #F5E8E5; 
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            color: var(--color-text-dark);
+            line-height: 1.6;
+            background-color: var(--color-bg-light);
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--color-primary-red);
+        }
+
+        section {
+            padding: 100px 5%;
+        }
+
+        .cta-primary {
+            display: inline-block;
+            background-color: var(--color-primary-red);
+            color: var(--color-text-light) !important;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .cta-primary:hover {
+            background-color: var(--color-secondary-red);
+        }
+
+        /* --- 헤더 --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 5%;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+            transition: background-color 0.3s;
+        }
+
+        .logo {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        nav a {
+            margin-left: 25px;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        /* 초기 상태 (hero-section 배경색에 맞춰 텍스트 흰색) */
+        header:not(.scrolled) .logo,
+        header:not(.scrolled) nav a {
+            color: var(--color-text-light); 
+        }
+        
+        /* 스크롤 시 상태 */
+        header.scrolled {
+            background-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        header.scrolled .logo,
+        header.scrolled nav a {
+            color: var(--color-text-dark);
+        }
+        
+        .cta-button {
+            /* header nav의 cta 버튼 */
+            background-color: var(--color-primary-red);
+            color: var(--color-text-light) !important;
+            padding: 8px 18px;
+            border-radius: 5px;
+            margin-left: 30px;
+        }
+
+
+        /* --- 1. 메인 히어로 섹션 (이미지 기반) --- */
+        .hero-section {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            text-align: center;
+            overflow: hidden;
+            padding: 0;
+            color: var(--color-text-light); /* 텍스트 색상 흰색 */
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('1.webp'); 
+            background-size: cover;
+            background-position: top center;
+            background-attachment: fixed; /* 패럴랙스 효과 (옵션) */
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .main-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 5vw;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            font-weight: 400;
+        }
+
+
+        /* --- 2. 제품 상세 섹션 (3D 모델) --- */
+        .product-section {
+            background-color: var(--color-bg-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 100px 5%;
+        }
+
+        .product-info-3d {
+            max-width: 700px;
+            margin-bottom: 30px;
+        }
+
+        .product-info-3d h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--color-text-dark);
+            margin-bottom: 15px;
+            line-height: 1.1;
+        }
+
+        .product-info-3d .description {
+            font-size: 1.2rem;
+            color: #666;
+        }
+        
+        /* 3D Model Viewer 스타일 */
+        model-viewer {
+            /* 애플 에어팟 맥스처럼 중앙에 크게 배치 */
+            width: 100%; 
+            max-width: 800px;
+            height: 70vh; /* 화면의 70%를 3D 모델에 할당 */
+            margin: 40px 0;
+            background-color: transparent; /* 흰 배경에 잘 어울리도록 뷰어 배경 투명 */
+        }
+        
+        /* --- 3. 주요 기능 섹션 --- */
+        .features-section {
+            background-color: var(--color-bg-poppy);
+            text-align: center;
+        }
+
+        .features-section h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .feature-item {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .feature-item i {
+            font-size: 2.5rem;
+            color: var(--color-primary-red);
+            margin-bottom: 15px;
+        }
+
+        .feature-item h4 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+        
+        /* --- 4. 갤러리 섹션 --- */
+        .gallery-section {
+            background-color: var(--color-text-dark);
+            color: var(--color-text-light);
+            text-align: center;
+        }
+
+        .gallery-section h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.2rem;
+            margin-bottom: 40px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* 3등분 균등 배치 */
+            gap: 20px;
+        }
+
+        .gallery-item {
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            /* 이미지가 균등하게 보이도록 높이 조정 */
+            aspect-ratio: 1 / 1;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        /* --- 5. 구매 CTA 섹션 및 푸터 --- */
+        .purchase-section {
+            background-color: var(--color-primary-red);
+            color: var(--color-text-light);
+            text-align: center;
+            padding: 80px 5%;
+        }
+
+        .purchase-section h2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .purchase-section .cta-primary {
+            background-color: var(--color-text-light);
+            color: var(--color-primary-red) !important;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+        }
+
+        .purchase-section .cta-primary:hover {
+            background-color: #eee;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px 5%;
+            font-size: 0.9rem;
+            color: #999;
+            background-color: #f4f4f4;
+        }
+        
+        /* --- 반응형 디자인 --- */
+        @media (max-width: 900px) {
+            .feature-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .main-title {
+                font-size: 8vw;
+            }
+            .product-info-3d h2 {
+                font-size: 2.5rem;
+            }
+            .gallery-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            nav {
+                display: none; /* 모바일에서 네비게이션 숨김 */
+            }
+            .hero-content {
+                padding: 0 10px;
+            }
+            model-viewer {
+                height: 50vh;
+            }
+        }
+
+        /* CSS 끝 */
+    </style>
+</head>
+<body>
+
+    <section class="hero-section" id="home">
+        <header>
+            <div class="logo">Beats</div>
+            <nav>
+                <a href="#product">제품</a>
+                <a href="#features">주요 기능</a>
+                <a href="#gallery">갤러리</a>
+                <a href="#purchase" class="cta-button">구매하기</a>
+            </nav>
+        </header>
+        <div class="hero-content">
+            <h1 class="main-title">RED POPPY MOMENT</h1>
+            <p class="subtitle">Jennie x Beats Solo3 Wireless Special Edition</p>
+            <a href="#product" class="cta-primary">3D 뷰로 상세보기</a>
+        </div>
+        <div class="hero-overlay"></div>
+    </section>
+
+    <section class="product-section" id="product">
+        <div class="product-info-3d">
+            <h2>몰입의 새로운 차원.</h2>
+            <p class="description">당신을 둘러싼 음향을 경험하세요. <br>마우스를 드래그하여 **360° 디자인 디테일**을 확인하세요.</p>
+        </div>
+        
+        <model-viewer 
+            src="Red_Beats_Headphones__1015023208_texture.glb" 
+            alt="Red Beats Headphones 3D Model" 
+            auto-rotate 
+            camera-controls 
+            ar 
+            shadow-intensity="1.5"
+            exposure="1.2"
+            tone-mapping="neutral"
+            camera-orbit="0deg 90deg 0m"
+            interaction-prompt="none"
+            poster="4.webp">
+        </model-viewer>
+
+        <p class="description" style="max-width: 700px; color: var(--color-text-dark); margin-top: 30px;">
+            **시그니처 레드 컬러와 커스텀 로고**가 새겨진 특별한 이어컵, 부드러운 쿠션 디테일까지 놓치지 마세요.
+        </p>
+    </section>
+
+    <section class="features-section" id="features">
+        <h3>DESIGNED FOR ARTISTS. BUILT FOR YOU.</h3>
+        <div class="feature-grid">
+            <div class="feature-item">
+                <i class="fas fa-fire-alt icon-red"></i>
+                <h4>강렬한 레드 시그니처</h4>
+                <p>전체적인 양귀비(Poppy) 컬러와 제니의 서명이 담긴 커스텀 리본 및 이어컵 디자인.</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-bolt icon-red"></i>
+                <h4>Fast Fuel 기술</h4>
+                <p>배터리 부족은 걱정하지 마세요. 5분 충전만으로 3시간의 재생 시간을 확보합니다.</p>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-crown icon-red"></i>
+                <h4>프리미엄 사운드</h4>
+                <p>선명한 고음과 깊이 있는 저음을 위한 어쿠스틱 디자인. 몰입감 넘치는 청취 경험.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="gallery-section" id="gallery">
+        <h3>EXCLUSIVE DETAILS</h3>
+        <div class="gallery-grid">
+            <div class="gallery-item"><img src="2.webp" alt="접혀진 헤드폰과 리본 디테일"></div>
+            <div class="gallery-item"><img src="5.webp" alt="특별판 휴대용 케이스"></div>
+            <div class="gallery-item"><img src="3.webp" alt="헤드폰 정면"></div>
+        </div>
+    </section>
+
+    <section class="purchase-section" id="purchase">
+        <div class="purchase-content">
+            <h2>지금, 당신의 스타일을 완성하세요.</h2>
+            <p>한정판으로 제공되는 Jennie Red Edition을 놓치지 마세요.</p>
+            <a href="#" class="cta-primary large">구매 페이지로 이동</a>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 Beats Electronics. Jennie Special Edition.</p>
+    </footer>
+
+    <script>
+        /* JavaScript 시작: 스크롤 시 헤더 색상 변경 로직 */
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.querySelector('header');
+            
+            window.addEventListener('scroll', () => {
+                // 50px 이상 스크롤되면 헤더 색상 변경
+                if (window.scrollY > 50) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            });
+        });
+        /* JavaScript 끝 */
+    </script>
+</body>
+</html>
