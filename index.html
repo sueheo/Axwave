@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>원티드 채용공고 검색 (전체+더보기 버전)</title>
+<style>
+  body {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f3f4f6;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 30px;
+    color: #1e3a8a;
+  }
+  .filter-box {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+  .filter-section {
+    margin-bottom: 16px;
+  }
+  .filter-title {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 8px;
+  }
+  .filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .filter-group label {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .filter-group input[type="checkbox"] {
+    margin-right: 5px;
+    accent-color: #2563eb;
+  }
+  .filter-group label:hover {
+    background: #e0ecff;
+    border-color: #93c5fd;
+  }
+  select, button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+  }
+  button {
+    background: #2563eb;
+    color: white;
+    font-weight: 500;
+    border: none;
+    margin-top: 8px;
+    transition: background 0.2s;
+  }
+  button:hover {
+    background: #1e40af;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  }
+  .card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+  }
+  .card-content {
+    padding: 14px 16px;
+  }
+  .card-content h3 {
+    font-size: 16px;
+    margin: 4px 0;
+    color: #1f2937;
+  }
+  .card-content p {
+    margin: 3px 0;
+    color: #6b7280;
+    font-size: 14px;
+  }
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+  #loadMoreBtn {
+    display: block;
+    margin: 30px auto;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-weight: 500;
+    transition: 0.2s;
+  }
+  #loadMoreBtn:hover {
+    background: #1e40af;
+  }
+</style>
+</head>
+<body>
+  <h1>💼 원티드 채용공고 검색</h1>
+
+  <div class="filter-box">
+    <div class="filter-section">
+      <div class="filter-title">📍 지역 선택</div>
+      <div class="filter-group" id="region-box">
+        <label><input type="checkbox" value="서울">서울</label>
+        <label><input type="checkbox" value="경기">경기</label>
+        <label><input type="checkbox" value="인천">인천</label>
+        <label><input type="checkbox" value="부산">부산</label>
+        <label><input type="checkbox" value="대전">대전</label>
+        <label><input type="checkbox" value="대구">대구</label>
+        <label><input type="checkbox" value="광주">광주</label>
+        <label><input type="checkbox" value="울산">울산</label>
+        <label><input type="checkbox" value="강원">강원</label>
+        <label><input type="checkbox" value="충북">충북</label>
+        <label><input type="checkbox" value="충남">충남</label>
+        <label><input type="checkbox" value="전북">전북</label>
+        <label><input type="checkbox" value="전남">전남</label>
+        <label><input type="checkbox" value="경북">경북</label>
+        <label><input type="checkbox" value="경남">경남</label>
+        <label><input type="checkbox" value="제주">제주</label>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">🧠 직무 선택</div>
+      <div class="filter-group" id="job-box">
+        <label><input type="checkbox" value="개발">개발</label>
+        <label><input type="checkbox" value="프론트엔드">프론트엔드</label>
+        <label><input type="checkbox" value="백엔드">백엔드</label>
+        <label><input type="checkbox" value="데이터">데이터</label>
+        <label><input type="checkbox" value="AI">AI</label>
+        <label><input type="checkbox" value="디자인">디자인</label>
+        <label><input type="checkbox" value="마케팅">마케팅</label>
+        <label><input type="checkbox" value="영업">영업</label>
+        <label><input type="checkbox" value="기획">기획</label>
+        <label><input type="checkbox" value="운영">운영</label>
+        <label><input type="checkbox" value="PM">PM</label>
+        <label><input type="checkbox" value="인사">인사</label>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">📅 경력</div>
+      <select id="years">
+        <option value="">전체</option>
+        <option value="0">신입</option>
+        <option value="1">1년 이상</option>
+        <option value="3">3년 이상</option>
+        <option value="5">5년 이상</option>
+        <option value="7">7년 이상</option>
+        <option value="10">10년 이상</option>
+      </select>
+    </div>
+
+    <button onclick="filterJobs()">🔍 검색하기</button>
+  </div>
+
+  <div id="results" class="cards"></div>
+
+  <script>
+    let allJobs = [];
+    let filteredJobs = [];
+    let currentIndex = 0;
+    const PAGE_SIZE = 50;
+
+    // 전체 페이지 불러오기 (offset 반복)
+    async function fetchAllJobs() {
+      const proxy = "https://cors-anywhere.herokuapp.com/";
+      const baseUrl = "https://www.wanted.co.kr/api/v4/jobs?country=kr&limit=100&job_sort=job.latest_order";
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "<p>📡 전체 채용공고 불러오는 중...</p>";
+
+      let offset = 0;
+      allJobs = [];
+
+      try {
+        while (true) {
+          const url = proxy + `${baseUrl}&offset=${offset}`;
+          const res = await fetch(url);
+          if (!res.ok) break;
+          const data = await res.json();
+          const jobs = data.data || [];
+          if (jobs.length === 0) break;
+
+          allJobs.push(...jobs);
+          resultsDiv.innerHTML = `<p>📦 ${allJobs.length}개 로드 중...</p>`;
+
+          if (jobs.length < 100 || offset >= 2000) break;
+          offset += 100;
+          await new Promise(r => setTimeout(r, 500)); // 서버 부하 방지
+        }
+
+        resultsDiv.innerHTML = `<p>✅ 총 ${allJobs.length}개 공고 로드 완료!</p>`;
+        renderJobs(allJobs.slice(0, PAGE_SIZE));
+      } catch (e) {
+        resultsDiv.innerHTML = `
+          <p style="color:red;">⚠️ CORS 접근 오류<br>
+          👉 <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank">여기</a> 에서 'Request temporary access' 클릭 후 새로고침해주세요.</p>`;
+      }
+    }
+
+    // 필터 적용
+    function filterJobs() {
+      if (allJobs.length === 0) {
+        alert("먼저 데이터를 불러와야 합니다!");
+        return;
+      }
+
+      const locations = Array.from(document.querySelectorAll("#region-box input:checked")).map(el => el.value);
+      const jobs = Array.from(document.querySelectorAll("#job-box input:checked")).map(el => el.value);
+      const years = document.getElementById("years").value;
+
+      filteredJobs = allJobs;
+
+      if (locations.length > 0) {
+        filteredJobs = filteredJobs.filter(j => 
+          locations.some(loc => (j.address?.full_location || "").includes(loc))
+        );
+      }
+      if (jobs.length > 0) {
+        filteredJobs = filteredJobs.filter(j => 
+          jobs.some(k => (j.position || "").toLowerCase().includes(k.toLowerCase()))
+        );
+      }
+      if (years) {
+        filteredJobs = filteredJobs.filter(j => j.annual_from >= parseInt(years));
+      }
+
+      currentIndex = 0;
+      renderJobs(filteredJobs);
+    }
+
+    // 카드 렌더링
+    function renderJobs(jobs, append = false) {
+      const container = document.getElementById("results");
+      if (!append) container.innerHTML = "";
+
+      const nextJobs = jobs.slice(currentIndex, currentIndex + PAGE_SIZE);
+      nextJobs.forEach(job => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const link = document.createElement("a");
+        link.href = `https://www.wanted.co.kr/wd/${job.id}`;
+        link.target = "_blank";
+
+        const img = document.createElement("img");
+        img.src = job.title_img?.thumb || job.logo_img?.thumb || "https://static.wanted.co.kr/images/wanted_default.png";
+
+        const content = document.createElement("div");
+        content.className = "card-content";
+
+        const title = document.createElement("h3");
+        title.textContent = job.position;
+
+        const company = document.createElement("p");
+        company.textContent = job.company?.name || "회사명 없음";
+
+        const loc = document.createElement("p");
+        loc.textContent = "📍 " + (job.address?.full_location || "위치 정보 없음");
+
+        content.append(title, company, loc);
+        link.append(img, content);
+        card.append(link);
+        container.appendChild(card);
+      });
+
+      currentIndex += PAGE_SIZE;
+
+      // 더보기 버튼 추가
+      const existingBtn = document.getElementById("loadMoreBtn");
+      if (existingBtn) existingBtn.remove();
+
+      if (currentIndex < jobs.length) {
+        const btn = document.createElement("button");
+        btn.id = "loadMoreBtn";
+        btn.textContent = "더보기 (" + (jobs.length - currentIndex) + "개 남음)";
+        btn.onclick = () => renderJobs(jobs, true);
+        container.appendChild(btn);
+      } else if (jobs.length > PAGE_SIZE) {
+        const endMsg = document.createElement("p");
+        endMsg.style.textAlign = "center";
+        endMsg.textContent = "✅ 모든 공고를 불러왔습니다.";
+        container.appendChild(endMsg);
+      }
+    }
+
+    // 시작 시 전체 로드
+    fetchAllJobs();
+  </script>
+</body>
+</html>
