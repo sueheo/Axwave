@@ -96,6 +96,9 @@ def fetch_all_jobs(max_pages=30):
 def filter_jobs(jobs, conf):
     filtered = []
     today = date.today()
+    min_years = conf.get("years_min", 0)
+    max_years = conf.get("years_max", float('inf')) # 최대값이 없으면 무한대로 설정
+    
     # 크론잡은 보통 매일 실행되므로, 오늘 등록된 공고만 필터링합니다.
     # 만약 '어제'까지 포함하려면 'today - timedelta(days=1)'을 사용합니다.
     
@@ -131,7 +134,8 @@ def filter_jobs(jobs, conf):
         
         if any(r in loc for r in conf.get("locations", [])) and \
            any(k.lower() in pos for k in conf.get("jobs", [])) and \
-           yrs >= conf.get("years", 0):
+           yrs_from >= min_years and \
+           yrs_from <= max_years: # 👈 최대 경력 제한 추가
             filtered.append(j)
             
     print(f"✅ 최종 유효 공고 수: {len(filtered)}")
