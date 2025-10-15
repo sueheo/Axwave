@@ -6,5 +6,6 @@
     "receiver_email": "sueheo@naver.com",
     "locations": ["서울", "판교", "분당"],
     "jobs": ["서비스 기획", "PO", "PM", "프로덕트 오너", "프로덕트 매니저", "큐레이터", "학예연구사", "전시 기획", "전시 운영", "전시 관리자"],
-    "years": 1
+    "years_min": 0, 
+    "years_max": 2  
 }

@@ -130,7 +130,7 @@ def filter_jobs(jobs, conf):
             loc = "" 
         
         pos = j.get("position", "").lower()
-        yrs = j.get("annual_from", 0) 
+        yrs = j.get("yrs_from", 0) 
         
         if any(r in loc for r in conf.get("locations", [])) and \
            any(k.lower() in pos for k in conf.get("jobs", [])) and \
