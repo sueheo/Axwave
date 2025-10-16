@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사업장 규모별 사망자수 분석 - BENTO DASHBOARD V4.0</title>
+    
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        /* --- Pretendard 웹폰트 --- */
+        @font-face {
+            font-family: 'Pretendard';
+            src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Pretendard';
+            src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Bold.woff') format('woff');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Pretendard';
+            src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-SemiBold.woff') format('woff');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Pretendard';
+            src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-ExtraBold.woff') format('woff');
+            font-weight: 800;
+            font-style: normal;
+        }
+
+        /* --- 1. CSS 변수: 모던 벤토 디자인 테마 --- */
+        :root {
+            --primary-color: #2563eb; /* 모던 블루 */
+            --secondary-color: #7c3aed; /* 퍼플 */
+            --accent-color: #dc2626; /* 레드 */
+            --success-color: #059669; /* 그린 */
+            --background-color: #f8fafc;
+            --card-bg-color: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --border-radius: 20px;
+            --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --card-shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.08);
+            --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --header-height: 80px;
+            --filter-panel-height: 120px;
+        }
+
+        /* --- 2. 기본 스타일 --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: linear-gradient(to bottom, #f8fafc 0%, #e0e7ff 100%);
+            color: var(--text-primary);
+            padding: 1.5rem;
+            padding-top: calc(var(--header-height) + var(--filter-panel-height) + 2rem);
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--card-bg-color);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1001;
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        /* --- 3. 동적 예측 벤토 그리드 레이아웃 --- */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: var(--row-1-height, 220px) var(--row-2-height, 450px) var(--row-3-height, auto);
+            gap: 1.5rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg-color);
+            border-radius: var(--border-radius);
+            padding: 1.75rem;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100%;  /* 그리드 셀 높이 100% 채우기 */
+        }
+
+        .card:hover {
+            box-shadow: var(--card-shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .card h3::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
+        }
+
+        /* 벤토 그리드 배치 - 명시적 위치 */
+        .kpi-absolute {
+            grid-column: 1 / 3;
+            grid-row: 1 / 2;
+        }
+
+        .kpi-ratio {
+            grid-column: 3 / 5;
+            grid-row: 1 / 2;
+        }
+
+        .trend-chart {
+            grid-column: 5 / 7;
+            grid-row: 1 / 3;  /* 1-2행 차지 */
+        }
+
+        .change-rate-chart {
+            grid-column: 1 / 4;
+            grid-row: 2 / 3;
+        }
+
+        .distribution-chart {
+            grid-column: 4 / 5;
+            grid-row: 2 / 3;
+        }
+
+        .details-grid-container {
+            grid-column: 1 / 7;
+            grid-row: 3 / 4;
+        }
+
+        /* --- 4. 필터 패널 --- */
+        .filters {
+            position: fixed;
+            top: var(--header-height);
+            left: 1.5rem;
+            right: 1.5rem;
+            z-index: 1000;
+            display: grid;
+            grid-template-columns: 1.2fr 1.2fr 1fr 1.6fr;
+            gap: 1rem;
+            background: var(--card-bg-color);
+            border-radius: var(--border-radius);
+            padding: 1.25rem;
+            box-shadow: var(--card-shadow);
+            max-width: calc(1600px - 3rem);
+            margin: 0 auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .filters select,
+        .filters input {
+            padding: 0.625rem 0.875rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.875rem;
+            background: var(--background-color);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .filters select:focus,
+        .filters input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .year-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        /* --- 5. KPI 카드 --- */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            height: 100%;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 1.25rem;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .kpi-card i {
+            font-size: 1.25rem;
+            opacity: 0.9;
+        }
+
+        .kpi-card .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.02em;
+        }
+
+        .kpi-card .kpi-label {
+            font-size: 0.7rem;
+            opacity: 0.9;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .kpi-card.ratio-card {
+            background: var(--background-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kpi-card.ratio-card::before {
+            display: none;
+        }
+
+        .kpi-card.ratio-card i {
+            font-size: 1.5rem;
+        }
+
+        /* --- 6. 데이터 카드 --- */
+        .data-card {
+            background: var(--background-color);
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        .data-grid .data-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--background-color);
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .data-grid .data-card:hover {
+            background: white;
+            border-color: var(--primary-color);
+            transform: translateX(4px);
+        }
+
+        .data-value {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 0.95rem;
+        }
+
+        /* --- 7. Plotly 차트 스타일 --- */
+        .plotly-graph-div {
+            height: 100% !important;
+        }
+
+        /* --- 8. 반응형 디자인 --- */
+        @media (max-width: 1200px) {
+            .dashboard-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .kpi-absolute,
+            .kpi-ratio {
+                grid-column: span 2;
+            }
+
+            .trend-chart {
+                grid-column: 1 / -1;
+                grid-row: 2 / 3;
+            }
+
+            .change-rate-chart,
+            .distribution-chart {
+                grid-column: span 2;
+                grid-row: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+                padding-top: calc(var(--header-height) + var(--filter-panel-height) + 3rem);
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+                left: 1rem;
+                right: 1rem;
+                padding: 1rem;
+            }
+
+            .dashboard-container {
+                grid-template-columns: 1fr;
+                gap: 0.875rem;
+            }
+
+            .card {
+                grid-column: 1 / -1 !important;
+                grid-row: auto !important;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.25rem;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    
+    <h1 style="max-width: 1600px; margin: 0 auto;">사업장 규모별 산업재해 사망자수 분석</h1>
+
+    <div class="filters">
+        <div class="filter-group">
+            <label class="filter-label">사업장 규모 선택</label>
+            <select id="categorySelect" multiple></select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label">기간 선택</label>
+            <div class="year-inputs">
+                <input type="number" id="startYear" placeholder="시작 연도">
+                <input type="number" id="endYear" placeholder="종료 연도">
+            </div>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label">데이터 모드</label>
+            <select id="displayMode">
+                <option value="absolute">실제 수치 (명)</option>
+                <option value="percentage">비율 (%)</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label class="filter-label">핵심 인사이트</label>
+            <div class="data-card" style="height: 100%; padding: 0.875rem; line-height: 1.5;" id="keyInsights">
+                데이터를 불러오는 중입니다...
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        
+        <div class="kpi-absolute card">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <i class="fas fa-users"></i>
+                    <div class="kpi-value" id="totalDeaths">-</div>
+                    <div class="kpi-label">총 사망자수<br>(전체 기간)</div>
+                </div>
+                <div class="kpi-card" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                    <i class="fas fa-chart-bar"></i>
+                    <div class="kpi-value" id="avgDeaths">-</div>
+                    <div class="kpi-label">연간 평균<br>사망자수</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-ratio card">
+            <div class="kpi-grid">
+                <div class="kpi-card ratio-card">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--accent-color);"></i>
+                    <div class="kpi-value" id="maxCategory" style="color: var(--accent-color);">-</div>
+                    <div class="kpi-label">최다 발생 규모</div>
+                </div>
+                <div class="kpi-card ratio-card">
+                    <i class="fas fa-arrow-up" id="growthIcon"></i>
+                    <div class="kpi-value" id="growthRate">-</div>
+                    <div class="kpi-label">전년 대비<br>전체 변화율</div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="trend-chart card">
+            <h3>📈 연도별 추이</h3>
+            <div id="totalTrendChart" style="flex: 1; min-height: 400px;"></div>
+        </div>
+
+        <div class="change-rate-chart card">
+            <h3>📊 연간 변화율</h3>
+            <div id="changeRateChart" style="flex: 1; min-height: 350px;"></div>
+        </div>
+
+        <div class="distribution-chart card">
+            <h3>🥧 최신 점유율</h3>
+            <div id="categoryDistributionChart" style="flex: 1; min-height: 350px;"></div>
+        </div>
+
+        <div class="details-grid-container card">
+            <h3>📋 상세 데이터</h3>
+            <div class="data-grid" id="detailsGrid"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- JAVASCRIPT LOGIC ---
+        
+        const colors = [
+            '#2563eb', '#7c3aed', '#dc2626', '#059669',
+            '#f59e0b', '#ec4899', '#8b5cf6', '#10b981',
+            '#06b6d4', '#f97316'
+        ];
+
+        const defaultChartStyle = {
+            font: { family: 'Pretendard, -apple-system, sans-serif', size: 12, color: '#0f172a' },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(248, 250, 252, 0.5)',
+            showlegend: true,
+            margin: { l: 60, r: 30, t: 20, b: 50 },
+            height: 350,
+            legend: {
+                orientation: 'h',
+                y: -0.15,
+                x: 0.5,
+                xanchor: 'center',
+                font: { size: 11 }
+            }
+        };
+
+        let originalData = [];
+        let categories = [];
+        let minYear = 2100, maxYear = 0;
+        let displayMode = 'absolute';
+
+        // 차트 크기 예측 및 동적 행 높이 설정
+        function calculateOptimalGridRows(filteredData) {
+            const categoryCount = categories.length;
+            const yearRange = maxYear - minYear + 1;
+
+            // 1행: KPI 카드 (고정)
+            const row1Height = 220;
+
+            // 2행: 추이/변화율/분포 차트
+            // - 카테고리가 많으면 범례가 커짐
+            // - 연도가 많으면 x축이 복잡해짐
+            const trendChartHeight = Math.max(400, Math.min(600, categoryCount * 25 + 250));
+            const changeRateHeight = Math.max(400, Math.min(600, yearRange * 20 + 300));
+            const distributionHeight = Math.max(400, Math.min(500, categoryCount * 30 + 200));
+
+            const row2Height = Math.max(trendChartHeight, changeRateHeight, distributionHeight);
+
+            // 3행: 상세 데이터 그리드
+            const detailsRows = Math.ceil(categoryCount / 3);
+            const row3Height = Math.max(200, detailsRows * 70 + 120);
+
+            // CSS 변수 업데이트
+            document.documentElement.style.setProperty('--row-1-height', `${row1Height}px`);
+            document.documentElement.style.setProperty('--row-2-height', `${row2Height}px`);
+            document.documentElement.style.setProperty('--row-3-height', `${row3Height}px`);
+
+            console.log('📐 Grid rows calculated:', {
+                categories: categoryCount,
+                years: yearRange,
+                row1: row1Height,
+                row2: row2Height,
+                row3: row3Height,
+                details: {
+                    trendChart: trendChartHeight,
+                    changeRate: changeRateHeight,
+                    distribution: distributionHeight
+                }
+            });
+
+            return { row1Height, row2Height, row3Height };
+        }
+
+        // Supabase 설정 (🚨 실제 API 키를 확인하세요)
+        const SUPABASE_URL = 'https://nmutttcelavvmoxfshql.supabase.co';
+        const SUPABASE_KEY = '***REMOVED***';
+        
+        // --- 유틸리티 및 데이터 처리 ---
+        function showLoading(show = true) {
+            const existing = document.getElementById('loadingOverlay');
+            if (show) {
+                if (existing) return;
+                const loadingEl = document.createElement('div');
+                loadingEl.id = 'loadingOverlay';
+                loadingEl.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(255, 255, 255, 0.9); display: flex;
+                    justify-content: center; align-items: center; z-index: 1000;
+                    font-size: 1.2rem; color: var(--primary-color);
+                `;
+                loadingEl.innerHTML = '<div style="text-align: center;"><p><i class="fas fa-spinner fa-spin"></i> 데이터를 불러오는 중입니다...</p></div>';
+                document.body.appendChild(loadingEl);
+            } else if (existing) {
+                existing.remove();
+            }
+        }
+
+        function showError(message) {
+            const errorEl = document.createElement('div');
+            errorEl.innerHTML = `<h3 style="margin: 0 0 10px 0; color: var(--accent-color);">오류 발생</h3><p style="margin: 0;">${message}</p>`;
+            errorEl.style.cssText = `
+                position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                background: var(--card-bg-color); padding: 20px; border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1000; border-left: 4px solid var(--accent-color);
+            `;
+            document.body.appendChild(errorEl);
+            setTimeout(() => errorEl.remove(), 7000);
+        }
+
+        function calculateGrowthRate(current, previous) {
+            return previous ? ((current - previous) / previous * 100) : 0;
+        }
+
+        function calculatePercentages(data) {
+            const yearTotals = {};
+            data.forEach(row => {
+                yearTotals[row.연도] = (yearTotals[row.연도] || 0) + row.사망자수;
+            });
+            
+            return data.map(row => ({
+                ...row,
+                값: (row.사망자수 / yearTotals[row.연도] * 100)
+            }));
+        }
+        
+        function getFilteredData() {
+            const selectedCategories = Array.from(document.getElementById('categorySelect').selectedOptions).map(opt => opt.value);
+            const startYear = parseInt(document.getElementById('startYear').value) || minYear;
+            const endYear = parseInt(document.getElementById('endYear').value) || maxYear;
+            displayMode = document.getElementById('displayMode').value;
+
+            return originalData.filter(row => 
+                selectedCategories.includes(row.구분) &&
+                row.연도 >= startYear &&
+                row.연도 <= endYear
+            );
+        }
+        
+        // --- 데이터 로드 및 변환 ---
+        async function fetchData() {
+            showLoading(true);
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/규모별사망자수?select=*`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorJson = await response.json().catch(() => ({}));
+                    const errorMessage = errorJson.message || response.statusText;
+                    throw new Error(`API 요청 실패: ${response.status} - ${errorMessage}. (API 키, 테이블 이름, CORS를 확인하세요)`);
+                }
+                
+                const data = await response.json();
+                
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('데이터가 올바른 형식이 아니거나 비어있습니다.');
+                }
+
+                transformData(data);
+                initializeFilters();
+                updateCharts(); 
+
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                showError(error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function transformData(data) {
+            originalData = [];
+
+            data.forEach(row => {
+                Object.entries(row).forEach(([key, value]) => {
+                    const yearMatch = key.match(/\d{4}/);
+                    if (yearMatch) {
+                        const year = parseInt(yearMatch[0]);
+                        minYear = Math.min(minYear, year);
+                        maxYear = Math.max(maxYear, year);
+
+                        originalData.push({
+                            구분: row['구분'],
+                            연도: year,
+                            사망자수: typeof value === 'number' ? value : parseInt(value) || 0
+                        });
+                    }
+                }
+            );
+            });
+            categories = [...new Set(originalData.map(item => item['구분']))].sort();
+
+            // 초기 그리드 행 높이 계산
+            calculateOptimalGridRows(originalData);
+        }
+
+        function initializeFilters() {
+            const categorySelect = document.getElementById('categorySelect');
+            categorySelect.innerHTML = '';
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.text = category;
+                option.selected = true;
+                categorySelect.appendChild(option);
+            });
+
+            document.getElementById('startYear').value = minYear;
+            document.getElementById('endYear').value = maxYear;
+
+            const controls = document.querySelectorAll('.filters select, .filters input');
+            controls.forEach(control => control.addEventListener('change', updateCharts));
+        }
+
+
+        // --- 핵심 업데이트 함수 ---
+        function updateCharts() {
+            const filteredData = getFilteredData();
+            if (filteredData.length === 0) {
+                showError('필터링된 데이터가 없습니다. 필터를 조정해 주세요.');
+                return;
+            }
+
+            // 필터링된 데이터 기준으로 그리드 재계산
+            calculateOptimalGridRows(filteredData);
+
+            updateKPIs(filteredData);
+            updateTrendChart(filteredData);
+            updateDistributionChart(filteredData);
+            updateChangeRateChart(filteredData);
+            updateDetailsGrid(filteredData);
+        }
+        
+        function updateKPIs(filteredData) {
+            const latestYear = Math.max(...filteredData.map(d => d.연도));
+            const latestData = filteredData.filter(d => d.연도 === latestYear);
+            
+            // 1. 전체 기간 총 사망자수
+            const totalDeaths = filteredData.reduce((sum, curr) => sum + curr.사망자수, 0);
+            document.getElementById('totalDeaths').textContent = totalDeaths.toLocaleString();
+
+            // 2. 평균 사망자수 (연간 평균)
+            const uniqueYears = new Set(filteredData.map(d => d.연도)).size;
+            const avgDeaths = uniqueYears > 0 ? totalDeaths / uniqueYears : 0;
+            document.getElementById('avgDeaths').textContent = Math.round(avgDeaths).toLocaleString();
+
+            // 3. 최다 발생 규모 (최신 연도 기준)
+            let maxCategory = { 구분: 'N/A', 사망자수: -1 };
+            if (latestData.length > 0) {
+                 maxCategory = latestData.reduce((max, curr) => 
+                    curr.사망자수 > max.사망자수 ? curr : max);
+            }
+            document.getElementById('maxCategory').textContent = maxCategory.구분;
+
+            // 4. 전년 대비 변화율 (최신 연도의 전체 합계 vs 이전 연도 전체 합계)
+            const totalLatest = latestData.reduce((sum, curr) => sum + curr.사망자수, 0);
+            const previousYear = latestYear - 1;
+            const totalPrevious = filteredData.filter(d => d.연도 === previousYear).reduce((sum, curr) => sum + curr.사망자수, 0);
+            const growthRate = calculateGrowthRate(totalLatest, totalPrevious);
+            const growthRateText = `${growthRate.toFixed(1)}%`;
+            
+            const growthEl = document.getElementById('growthRate');
+            const iconEl = document.getElementById('growthIcon'); 
+            
+            growthEl.textContent = growthRateText;
+            
+            // 아이콘 및 색상 변경
+            if (growthRate > 0) {
+                growthEl.style.color = 'var(--accent-color)'; // Coral (증가 = 위험)
+                iconEl.className = 'fas fa-arrow-up';
+                iconEl.style.color = 'var(--accent-color)';
+            } else if (growthRate < 0) {
+                growthEl.style.color = 'var(--primary-color)'; // Teal (감소 = 긍정)
+                iconEl.className = 'fas fa-arrow-down';
+                iconEl.style.color = 'var(--primary-color)';
+            } else {
+                growthEl.style.color = 'var(--text-secondary)';
+                iconEl.className = 'fas fa-equals';
+                iconEl.style.color = 'var(--text-secondary)';
+            }
+
+
+            // 5. 주요 인사이트
+            const growthIcon = growthRate >= 0 ? '📈' : '📉';
+            const insights = [
+                `<strong>${latestYear}년</strong> 총 <strong style="color: var(--primary-color);">${totalLatest.toLocaleString()}명</strong>`,
+                `최다 규모: <strong style="color: var(--accent-color);">${maxCategory.구분}</strong>`,
+                `${growthIcon} 전년비 <strong>${Math.abs(growthRate).toFixed(1)}%</strong> ${growthRate >= 0 ? '증가' : '감소'}`,
+            ];
+            document.getElementById('keyInsights').innerHTML = insights.join(' • ');
+        }
+
+
+        function updateTrendChart(filteredData) {
+            let dataForChart = displayMode === 'percentage' ? 
+                                calculatePercentages(filteredData).map(d => ({...d, 사망자수: d.값})) : 
+                                filteredData;
+
+            const categoryLines = categories.map((category, index) => {
+                const categoryData = dataForChart.filter(row => row.구분 === category);
+                return {
+                    x: categoryData.map(row => row.연도),
+                    y: categoryData.map(row => row.사망자수),
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: category,
+                    line: { color: colors[index % colors.length], width: 3 }, 
+                    marker: { size: 6 }
+                };
+            });
+
+            Plotly.newPlot('totalTrendChart', categoryLines, {
+                ...defaultChartStyle,
+                xaxis: {
+                    title: { text: '연도', font: { size: 11 } },
+                    gridcolor: '#e2e8f0',
+                    showgrid: true
+                },
+                yaxis: {
+                    title: { text: displayMode === 'percentage' ? '비율 (%)' : '사망자수', font: { size: 11 } },
+                    gridcolor: '#e2e8f0',
+                    showgrid: true
+                },
+                autosize: true,
+                hovermode: 'x unified',
+                margin: { l: 60, r: 30, t: 10, b: 50 }
+            }, { responsive: true });
+        }
+        
+        function updateDistributionChart(filteredData) {
+            const latestYear = Math.max(...filteredData.map(row => row.연도));
+            const latestData = filteredData.filter(d => d.연도 === latestYear);
+
+            const pieData = [{
+                values: latestData.map(row => row.사망자수),
+                labels: latestData.map(row => row.구분),
+                type: 'pie',
+                hole: 0.5,
+                marker: {
+                    colors: colors,
+                    line: { color: 'white', width: 2 }
+                },
+                textposition: 'auto',
+                textinfo: 'label+percent',
+                textfont: {
+                    size: 11,
+                    family: 'Pretendard, sans-serif',
+                    color: 'white'
+                },
+                automargin: true,
+                hoverinfo: 'label+value+percent',
+                hoverlabel: {
+                    font: { size: 12, family: 'Pretendard, sans-serif' }
+                },
+                pull: 0.02
+            }];
+
+            Plotly.newPlot('categoryDistributionChart', pieData, {
+                ...defaultChartStyle,
+                autosize: true,
+                showlegend: false,
+                margin: { l: 10, r: 10, t: 10, b: 10 },
+                annotations: [{
+                    text: `<b>${latestYear}년</b><br>총 ${latestData.reduce((sum, d) => sum + d.사망자수, 0).toLocaleString()}명`,
+                    x: 0.5,
+                    y: 0.5,
+                    xref: 'paper',
+                    yref: 'paper',
+                    showarrow: false,
+                    font: {
+                        size: 14,
+                        family: 'Pretendard, sans-serif',
+                        color: '#0f172a'
+                    }
+                }]
+            }, { responsive: true });
+        }
+        
+        function updateChangeRateChart(filteredData) {
+            const uniqueYears = Array.from(new Set(filteredData.map(d => d.연도))).sort();
+            
+            if (uniqueYears.length < 2) {
+                Plotly.purge('changeRateChart');
+                return;
+            }
+
+            const dataByYear = {};
+            filteredData.forEach(d => {
+                dataByYear[d.연도] = dataByYear[d.연도] || {};
+                dataByYear[d.연도][d.구분] = d.사망자수;
+            });
+
+            const barData = categories.map((category, index) => {
+                const categoryRates = [];
+                for (let i = 1; i < uniqueYears.length; i++) {
+                    const currentYear = uniqueYears[i];
+                    const previousYear = uniqueYears[i - 1];
+                    const currentVal = dataByYear[currentYear][category] || 0;
+                    const previousVal = dataByYear[previousYear][category] || 0;
+                    const growthRate = previousVal > 0 ? calculateGrowthRate(currentVal, previousVal) : 0;
+
+                    categoryRates.push({
+                        연도: currentYear,
+                        증가율: growthRate
+                    });
+                }
+
+                return {
+                    x: categoryRates.map(row => row.연도),
+                    y: categoryRates.map(row => row.증가율),
+                    type: 'bar',
+                    name: category,
+                    marker: { color: colors[index % colors.length] }
+                };
+            }).filter(trace => trace.y.some(rate => rate !== 0)); 
+
+            Plotly.newPlot('changeRateChart', barData, {
+                ...defaultChartStyle,
+                barmode: 'group',
+                xaxis: {
+                    title: { text: '연도', font: { size: 11 } },
+                    gridcolor: '#e2e8f0'
+                },
+                yaxis: {
+                    title: { text: '증가율 (%)', font: { size: 11 } },
+                    gridcolor: '#e2e8f0',
+                    tickformat: '.1f',
+                    zeroline: true,
+                    zerolinecolor: '#94a3b8',
+                    zerolinewidth: 2
+                },
+                autosize: true,
+                bargap: 0.15,
+                bargroupgap: 0.1,
+                margin: { l: 60, r: 30, t: 10, b: 50 }
+            }, { responsive: true });
+        }
+        
+        function updateDetailsGrid(filteredData) {
+            const latestYear = Math.max(...filteredData.map(d => d.연도));
+            const latestData = filteredData.filter(d => d.연도 === latestYear).sort((a, b) => b.사망자수 - a.사망자수);
+            
+            const gridEl = document.getElementById('detailsGrid');
+            gridEl.innerHTML = '';
+
+            latestData.forEach(row => {
+                const yearTotal = latestData.reduce((sum, curr) => sum + curr.사망자수, 0);
+                const percent = ((row.사망자수 / yearTotal) * 100).toFixed(1);
+
+                const card = document.createElement('div');
+                card.className = 'data-card';
+                card.innerHTML = `
+                    <span>${row.구분}</span>
+                    <span class="data-value">${row.사망자수.toLocaleString()} 명 (${percent}%)</span>
+                `;
+                gridEl.appendChild(card);
+            });
+        }
+
+        // --- 초기 실행 및 이벤트 리스너 설정 ---
+        document.addEventListener('DOMContentLoaded', () => {
+             fetchData(); 
+        });
+    </script>
+</body>
+</html>
