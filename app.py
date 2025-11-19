@@ -604,7 +604,9 @@ def main():
                 st.markdown("### 🏠 아파트")
                 if apt_df is not None and not apt_df.empty and '아파트' in apt_df.columns:
                     best_apt = apt_df.nsmallest(5, '평당가')[['아파트', '법정동', '평수', '거래금액', '평당가']].copy()
-                    best_apt.insert(0, '순위', ['🥇', '🥈', '🥉', '4위', '5위'])
+                    # 실제 데이터 개수에 맞춰 순위 생성
+                    ranks = ['🥇', '🥈', '🥉', '4위', '5위'][:len(best_apt)]
+                    best_apt.insert(0, '순위', ranks)
                     st.dataframe(best_apt, use_container_width=True, hide_index=True)
                 else:
                     st.info("데이터가 없습니다.")
@@ -613,7 +615,9 @@ def main():
                 st.markdown("### 🏢 오피스텔")
                 if office_df is not None and not office_df.empty and '단지' in office_df.columns:
                     best_office = office_df.nsmallest(5, '평당가')[['단지', '법정동', '평수', '거래금액', '평당가']].copy()
-                    best_office.insert(0, '순위', ['🥇', '🥈', '🥉', '4위', '5위'])
+                    # 실제 데이터 개수에 맞춰 순위 생성
+                    ranks = ['🥇', '🥈', '🥉', '4위', '5위'][:len(best_office)]
+                    best_office.insert(0, '순위', ranks)
                     st.dataframe(best_office, use_container_width=True, hide_index=True)
                 else:
                     st.info("데이터가 없습니다.")
